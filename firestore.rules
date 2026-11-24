@@ -1,0 +1,325 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Global Security Primitives
+    // -------------------------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'sutharinithisha3@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // -------------------------------------------------------------------------
+    // Entity Validation Blueprints (Synchronized with firebase-blueprint.json)
+    // -------------------------------------------------------------------------
+    function isValidBranch(data) {
+      return data.keys().hasAll([
+          'branchCode', 'name', 'city', 'state', 'address',
+          'routingCode', 'managerName', 'phone', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'branchCode', 'name', 'city', 'state', 'address',
+          'routingCode', 'managerName', 'phone', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.branchCode is string && data.branchCode.size() >= 3 && data.branchCode.size() <= 20 && data.branchCode.matches('^[A-Z0-9\\-]+$') &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.city is string && data.city.size() >= 2 && data.city.size() <= 60 &&
+        data.state is string && data.state.size() >= 2 && data.state.size() <= 60 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 200 &&
+        data.routingCode is string && data.routingCode.size() >= 4 && data.routingCode.size() <= 24 && data.routingCode.matches('^[A-Z0-9\\-]+$') &&
+        data.managerName is string && data.managerName.size() >= 2 && data.managerName.size() <= 80 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 24 &&
+        data.status in ['active', 'closed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll([
+          'uid', 'customerCode', 'fullName', 'email', 'phone',
+          'address', 'dateOfBirth', 'branchId', 'kycStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'customerCode', 'fullName', 'email', 'phone',
+          'address', 'dateOfBirth', 'branchId', 'kycStatus', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        (data.uid == request.auth.uid || isAdmin()) &&
+        data.customerCode is string && data.customerCode.size() >= 4 && data.customerCode.size() <= 24 && data.customerCode.matches('^[A-Z0-9\\-]+$') &&
+        data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 7 && data.phone.size() <= 24 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 250 &&
+        data.dateOfBirth is string && data.dateOfBirth.size() >= 8 && data.dateOfBirth.size() <= 20 && data.dateOfBirth.matches('^[0-9\\-]+$') &&
+        isValidId(data.branchId) &&
+        data.kycStatus in ['pending', 'verified', 'suspended'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAccount(data) {
+      return data.keys().hasAll([
+          'accountNumber', 'customerId', 'uid', 'branchId',
+          'accountType', 'balance', 'currency', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'accountNumber', 'customerId', 'uid', 'branchId',
+          'accountType', 'balance', 'currency', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.accountNumber is string && data.accountNumber.size() >= 8 && data.accountNumber.size() <= 24 && data.accountNumber.matches('^[A-Z0-9\\-]+$') &&
+        isValidId(data.customerId) &&
+        isValidId(data.uid) &&
+        (data.uid == request.auth.uid || isAdmin()) &&
+        isValidId(data.branchId) &&
+        data.accountType in ['Savings', 'Checking', 'Fixed Deposit'] &&
+        (data.balance is int || data.balance is float) && data.balance >= 0 && data.balance <= 100000000 &&
+        data.currency in ['USD'] &&
+        data.status in ['active', 'frozen', 'closed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll([
+          'referenceCode', 'accountId', 'accountNumber', 'customerId', 'uid',
+          'type', 'amount', 'balanceBefore', 'balanceAfter', 'description', 'status', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'referenceCode', 'accountId', 'accountNumber', 'customerId', 'uid',
+          'type', 'amount', 'balanceBefore', 'balanceAfter', 'description', 'status', 'createdAt'
+        ]) &&
+        data.referenceCode is string && data.referenceCode.size() >= 6 && data.referenceCode.size() <= 32 && data.referenceCode.matches('^[A-Z0-9\\-]+$') &&
+        isValidId(data.accountId) &&
+        data.accountNumber is string && data.accountNumber.size() >= 8 && data.accountNumber.size() <= 24 && data.accountNumber.matches('^[A-Z0-9\\-]+$') &&
+        isValidId(data.customerId) &&
+        isValidId(data.uid) &&
+        (data.uid == request.auth.uid || isAdmin()) &&
+        data.type in ['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'loan_disbursement', 'loan_repayment'] &&
+        (data.amount is int || data.amount is float) && data.amount > 0 && data.amount <= 10000000 &&
+        (data.balanceBefore is int || data.balanceBefore is float) && data.balanceBefore >= 0 && data.balanceBefore <= 100000000 &&
+        (data.balanceAfter is int || data.balanceAfter is float) && data.balanceAfter >= 0 && data.balanceAfter <= 100000000 &&
+        data.description is string && data.description.size() >= 2 && data.description.size() <= 200 &&
+        data.status in ['completed', 'reversed'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidLoan(data) {
+      return data.keys().hasAll([
+          'loanCode', 'customerId', 'uid', 'accountId', 'branchId',
+          'loanType', 'principalAmount', 'interestRate', 'termMonths',
+          'monthlyEmi', 'remainingBalance', 'purpose', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'loanCode', 'customerId', 'uid', 'accountId', 'branchId',
+          'loanType', 'principalAmount', 'interestRate', 'termMonths',
+          'monthlyEmi', 'remainingBalance', 'purpose', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.loanCode is string && data.loanCode.size() >= 6 && data.loanCode.size() <= 24 && data.loanCode.matches('^[A-Z0-9\\-]+$') &&
+        isValidId(data.customerId) &&
+        isValidId(data.uid) &&
+        (data.uid == request.auth.uid || isAdmin()) &&
+        isValidId(data.accountId) &&
+        isValidId(data.branchId) &&
+        data.loanType in ['Personal', 'Home', 'Auto', 'Business', 'Education'] &&
+        (data.principalAmount is int || data.principalAmount is float) && data.principalAmount >= 100 && data.principalAmount <= 10000000 &&
+        (data.interestRate is int || data.interestRate is float) && data.interestRate >= 1 && data.interestRate <= 35 &&
+        (data.termMonths is int || data.termMonths is float) && data.termMonths >= 3 && data.termMonths <= 360 &&
+        (data.monthlyEmi is int || data.monthlyEmi is float) && data.monthlyEmi > 0 && data.monthlyEmi <= 10000000 &&
+        (data.remainingBalance is int || data.remainingBalance is float) && data.remainingBalance >= 0 && data.remainingBalance <= 20000000 &&
+        data.purpose is string && data.purpose.size() >= 3 && data.purpose.size() <= 200 &&
+        data.status in ['pending', 'active', 'rejected', 'paid'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'role', 'createdAt']) &&
+        isValidId(data.uid) &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 120 &&
+        data.role in ['admin', 'manager'] &&
+        data.createdAt is timestamp;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && (adminId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminUser(incoming()) &&
+        incoming().uid == adminId && incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(adminId) && isValidAdminUser(incoming()) &&
+        incoming().uid == existing().uid && incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['role', 'email']);
+      allow delete: if isAdmin() && isValidId(adminId);
+    }
+
+    match /BRANCHES/{branchId} {
+      allow get: if isVerifiedUser() && isValidId(branchId);
+      allow list: if isVerifiedUser() && (resource.data.status == 'active' || isAdmin());
+      allow create: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(branchId) && isValidBranch(incoming()) &&
+        incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'branchCode', 'name', 'city', 'state', 'address', 'routingCode', 'managerName', 'phone', 'status', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(branchId);
+    }
+
+    match /CUSTOMERS/{customerId} {
+      allow get: if isVerifiedUser() && isValidId(customerId) && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(customerId) && isValidCustomer(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/BRANCHES/$(incoming().branchId)) && (
+          isAdmin() ||
+          (customerId == request.auth.uid && incoming().uid == request.auth.uid && incoming().kycStatus == 'pending')
+        );
+      allow update: if isVerifiedUser() && isValidId(customerId) && isValidCustomer(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().customerCode == existing().customerCode &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/BRANCHES/$(incoming().branchId)) && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'fullName', 'email', 'phone', 'address', 'dateOfBirth', 'branchId', 'kycStatus', 'updatedAt'
+          ])) ||
+          (existing().uid == request.auth.uid && existing().kycStatus != 'suspended' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'phone', 'address', 'branchId', 'updatedAt']))
+        );
+      allow delete: if isAdmin() && isValidId(customerId);
+    }
+
+    match /ACCOUNTS/{accountId} {
+      allow get: if isVerifiedUser() && isValidId(accountId) && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(accountId) && isValidAccount(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/CUSTOMERS/$(incoming().customerId)) &&
+        exists(/databases/$(database)/documents/BRANCHES/$(incoming().branchId)) && (
+          isAdmin() ||
+          (incoming().uid == request.auth.uid &&
+            get(/databases/$(database)/documents/CUSTOMERS/$(incoming().customerId)).data.uid == request.auth.uid &&
+            get(/databases/$(database)/documents/CUSTOMERS/$(incoming().customerId)).data.kycStatus != 'suspended' &&
+            incoming().balance == 0 && incoming().status == 'active')
+        );
+      allow update: if isVerifiedUser() && isValidId(accountId) && isValidAccount(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().customerId == existing().customerId &&
+        incoming().accountNumber == existing().accountNumber &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (existing().status != 'closed' || isAdmin()) && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'balance', 'status', 'branchId', 'accountType', 'updatedAt'
+          ])) ||
+          (existing().uid == request.auth.uid && existing().status == 'active' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['balance', 'updatedAt']) &&
+            incoming().balance != existing().balance)
+        );
+      allow delete: if isAdmin() && isValidId(accountId);
+    }
+
+    match /Transactions/{transactionId} {
+      allow get: if isVerifiedUser() && isValidId(transactionId) && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(transactionId) && isValidTransaction(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().status == 'completed' &&
+        exists(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)) &&
+        get(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)).data.status == 'active' &&
+        (
+          (incoming().type in ['deposit', 'transfer_in', 'loan_disbursement'] &&
+            math.abs(incoming().balanceAfter - (incoming().balanceBefore + incoming().amount)) < 0.005) ||
+          (incoming().type in ['withdrawal', 'transfer_out', 'loan_repayment'] &&
+            math.abs(incoming().balanceAfter - (incoming().balanceBefore - incoming().amount)) < 0.005)
+        ) &&
+        math.abs(getAfter(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)).data.balance - incoming().balanceAfter) < 0.005 && (
+          isAdmin() ||
+          (incoming().uid == request.auth.uid &&
+            incoming().type in ['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'loan_repayment'] &&
+            get(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)).data.uid == request.auth.uid)
+        );
+      allow update: if isAdmin() && isValidId(transactionId) && isValidTransaction(incoming()) &&
+        incoming().referenceCode == existing().referenceCode &&
+        incoming().accountId == existing().accountId &&
+        incoming().accountNumber == existing().accountNumber &&
+        incoming().customerId == existing().customerId &&
+        incoming().uid == existing().uid &&
+        incoming().type == existing().type &&
+        incoming().amount == existing().amount &&
+        incoming().balanceBefore == existing().balanceBefore &&
+        incoming().balanceAfter == existing().balanceAfter &&
+        incoming().description == existing().description &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+
+    match /LOANS/{loanId} {
+      allow get: if isVerifiedUser() && isValidId(loanId) && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(loanId) && isValidLoan(incoming()) &&
+        incoming().createdAt == request.time && incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/CUSTOMERS/$(incoming().customerId)) &&
+        exists(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)) &&
+        exists(/databases/$(database)/documents/BRANCHES/$(incoming().branchId)) && (
+          isAdmin() ||
+          (incoming().uid == request.auth.uid &&
+            get(/databases/$(database)/documents/CUSTOMERS/$(incoming().customerId)).data.uid == request.auth.uid &&
+            get(/databases/$(database)/documents/ACCOUNTS/$(incoming().accountId)).data.uid == request.auth.uid &&
+            incoming().status == 'pending' &&
+            incoming().remainingBalance == incoming().principalAmount)
+        );
+      allow update: if isVerifiedUser() && isValidId(loanId) && isValidLoan(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().customerId == existing().customerId &&
+        incoming().accountId == existing().accountId &&
+        incoming().loanCode == existing().loanCode &&
+        incoming().principalAmount == existing().principalAmount &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (!(existing().status in ['rejected', 'paid']) || isAdmin()) && (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'remainingBalance', 'interestRate', 'termMonths', 'monthlyEmi', 'updatedAt'
+          ])) ||
+          (existing().uid == request.auth.uid &&
+            existing().status == 'active' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['remainingBalance', 'status', 'updatedAt']) &&
+            incoming().remainingBalance < existing().remainingBalance &&
+            ((incoming().remainingBalance == 0 && incoming().status == 'paid') ||
+             (incoming().remainingBalance > 0 && incoming().status == 'active')))
+        );
+      allow delete: if isAdmin() && isValidId(loanId);
+    }
+  }
+}

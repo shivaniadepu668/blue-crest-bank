@@ -1,0 +1,505 @@
+{
+  "entities": {
+    "Branch": {
+      "title": "Branch",
+      "description": "A bank branch location and its operational details.",
+      "type": "object",
+      "properties": {
+        "branchCode": {
+          "type": "string",
+          "description": "Unique branch code identifier.",
+          "minLength": 3,
+          "maxLength": 20,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the branch.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "description": "City where the branch is located.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "state": {
+          "type": "string",
+          "description": "State or region where the branch is located.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "address": {
+          "type": "string",
+          "description": "Street address of the branch.",
+          "minLength": 5,
+          "maxLength": 200
+        },
+        "routingCode": {
+          "type": "string",
+          "description": "Simulated routing or IFSC code.",
+          "minLength": 4,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "managerName": {
+          "type": "string",
+          "description": "Full name of the branch manager.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact telephone number for the branch.",
+          "minLength": 7,
+          "maxLength": 24
+        },
+        "status": {
+          "type": "string",
+          "description": "Operational status of the branch.",
+          "enum": ["active", "closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the branch was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the branch was last updated."
+        }
+      },
+      "required": [
+        "branchCode",
+        "name",
+        "city",
+        "state",
+        "address",
+        "routingCode",
+        "managerName",
+        "phone",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Registered banking customer profile linked to Firebase Authentication UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID owning this customer record.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "customerCode": {
+          "type": "string",
+          "description": "Unique customer reference number.",
+          "minLength": 4,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Customer legal full name.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Customer verified email address.",
+          "minLength": 5,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number.",
+          "minLength": 7,
+          "maxLength": 24
+        },
+        "address": {
+          "type": "string",
+          "description": "Customer residential address.",
+          "minLength": 5,
+          "maxLength": 250
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "description": "Date of birth in YYYY-MM-DD format.",
+          "minLength": 8,
+          "maxLength": 20,
+          "pattern": "^[0-9-]+$"
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Primary home branch ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "kycStatus": {
+          "type": "string",
+          "description": "Know Your Customer verification status.",
+          "enum": ["pending", "verified", "suspended"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the customer registered."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the customer profile was last updated."
+        }
+      },
+      "required": [
+        "uid",
+        "customerCode",
+        "fullName",
+        "email",
+        "phone",
+        "address",
+        "dateOfBirth",
+        "branchId",
+        "kycStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Simulated bank account belonging to a customer and branch.",
+      "type": "object",
+      "properties": {
+        "accountNumber": {
+          "type": "string",
+          "description": "Simulated formatted account number.",
+          "minLength": 8,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Document ID of the owning customer in CUSTOMERS.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the account owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Document ID of the servicing branch in BRANCHES.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "accountType": {
+          "type": "string",
+          "description": "Type of bank account.",
+          "enum": ["Savings", "Checking", "Fixed Deposit"]
+        },
+        "balance": {
+          "type": "number",
+          "description": "Current simulated balance in USD."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code for the simulated account.",
+          "enum": ["USD"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the bank account.",
+          "enum": ["active", "frozen", "closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the account was opened."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the account was last modified."
+        }
+      },
+      "required": [
+        "accountNumber",
+        "customerId",
+        "uid",
+        "branchId",
+        "accountType",
+        "balance",
+        "currency",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Immutable simulated ledger record for deposits, withdrawals, transfers, and loan flows.",
+      "type": "object",
+      "properties": {
+        "referenceCode": {
+          "type": "string",
+          "description": "Unique simulated transaction reference ID.",
+          "minLength": 6,
+          "maxLength": 32,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Document ID of the impacted account in ACCOUNTS.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Account number snapshot for ledger display.",
+          "minLength": 8,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Document ID of the customer in CUSTOMERS.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the account owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Transaction operation category.",
+          "enum": ["deposit", "withdrawal", "transfer_in", "transfer_out", "loan_disbursement", "loan_repayment"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "Positive simulated monetary amount."
+        },
+        "balanceBefore": {
+          "type": "number",
+          "description": "Account balance immediately prior to the transaction."
+        },
+        "balanceAfter": {
+          "type": "number",
+          "description": "Account balance immediately after the transaction."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable memo or note for the transaction.",
+          "minLength": 2,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "description": "Settlement status of the simulated transaction.",
+          "enum": ["completed", "reversed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the transaction occurred."
+        }
+      },
+      "required": [
+        "referenceCode",
+        "accountId",
+        "accountNumber",
+        "customerId",
+        "uid",
+        "type",
+        "amount",
+        "balanceBefore",
+        "balanceAfter",
+        "description",
+        "status",
+        "createdAt"
+      ]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "Simulated customer loan application and repayment schedule state.",
+      "type": "object",
+      "properties": {
+        "loanCode": {
+          "type": "string",
+          "description": "Unique loan reference code.",
+          "minLength": 6,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Document ID of the borrowing customer.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the borrowing customer.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Linked bank account ID for disbursement and repayments.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "branchId": {
+          "type": "string",
+          "description": "Servicing branch ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "loanType": {
+          "type": "string",
+          "description": "Category of loan product.",
+          "enum": ["Personal", "Home", "Auto", "Business", "Education"]
+        },
+        "principalAmount": {
+          "type": "number",
+          "description": "Original requested or approved loan principal."
+        },
+        "interestRate": {
+          "type": "number",
+          "description": "Simulated annual percentage interest rate."
+        },
+        "termMonths": {
+          "type": "number",
+          "description": "Loan duration in months."
+        },
+        "monthlyEmi": {
+          "type": "number",
+          "description": "Calculated estimated monthly installment."
+        },
+        "remainingBalance": {
+          "type": "number",
+          "description": "Outstanding simulated principal balance."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Declared purpose for the loan.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "description": "Current workflow state of the loan.",
+          "enum": ["pending", "active", "rejected", "paid"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the loan application was submitted."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the loan was last updated."
+        }
+      },
+      "required": [
+        "loanCode",
+        "customerId",
+        "uid",
+        "accountId",
+        "branchId",
+        "loanType",
+        "principalAmount",
+        "interestRate",
+        "termMonths",
+        "monthlyEmi",
+        "remainingBalance",
+        "purpose",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized bank administrator record keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified email of the administrator.",
+          "minLength": 5,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrative role level.",
+          "enum": ["admin", "manager"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin access was granted."
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/BRANCHES/{branchId}": {
+      "schema": { "$ref": "#/entities/Branch" },
+      "description": "Bank branches directory."
+    },
+    "/CUSTOMERS/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Customer profiles containing PII isolated to owner and admin."
+    },
+    "/ACCOUNTS/{accountId}": {
+      "schema": { "$ref": "#/entities/Account" },
+      "description": "Simulated customer bank accounts."
+    },
+    "/Transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Immutable simulated financial transaction ledger."
+    },
+    "/LOANS/{loanId}": {
+      "schema": { "$ref": "#/entities/Loan" },
+      "description": "Simulated customer loans and applications."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Bank administrator role assignments."
+    }
+  }
+}
